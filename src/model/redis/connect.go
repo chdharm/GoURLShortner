@@ -1,22 +1,130 @@
-package redisconnect
+package main
 
 import (
-	"github.com/go-redis/redis"
+	"log"
+	"os"
+	"strings"
+
+	"github.com/gomodule/redigo/redis"
 )
 
-func Connect(){
-	/*------- Redis Config ----------*/
-	redisClient := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "",
-		DB:       0,
-	})
-	redisPong, redisErr := redisClient.Ping().Result()
-	if redisErr != nil {
-		panic(redisErr)
+var pool *redis.Pool
+
+func initRedis() {
+	// init redis connection pool
+	initPool()
+
+	// bootstramp some data to redis
+	initStore()
+}
+
+func initPool() {
+	pool = &redis.Pool{
+		MaxIdle:   80,
+		MaxActive: 12000,
+		Dial: func() (redis.Conn, error) {
+			conn, err := redis.Dial("tcp", "localhost:6379")
+			if err != nil {
+				log.Printf("ERROR: fail init redis: %s", err.Error())
+				os.Exit(1)
+			}
+			return conn, err
+		},
 	}
-	if redisPong == "PONG" {
-		fmt.Println("Redis client connected")
+}
+
+func initStore() {
+	// get conn and put back when exit from method
+	conn := pool.Get()
+	defer conn.Close()
+
+	macs := []string{"00000C  Cisco", "00000D  FIBRONICS", "00000E  Fujitsu",
+		"00000F  Next", "000010  Hughes"}
+	for _, mac := range macs {
+		pair := strings.Split(mac, "  ")
+		set(pair[0], pair[1])
 	}
-	/*------------------------------------*/
+}
+
+func ping(conn redis.Conn) {
+	_, err := redis.String(conn.Do("PING"))
+	if err != nil {
+		log.Printf("ERROR: fail ping redis conn: %s", err.Error())
+		os.Exit(1)
+	}
+}
+
+func set(key string, val string) error {
+	// get conn and put back when exit from method
+	conn := pool.Get()
+	defer conn.Close()
+
+	_, err := conn.Do("SET", key, val)
+	if err != nil {
+		log.Printf("ERROR: fail set key %s, val %s, error %s", key, val, err.Error())
+		return err
+	}
+
+	return nil
+}
+
+func get(key string) (string, error) {
+	// get conn and put back when exit from method
+	conn := pool.Get()
+	defer conn.Close()
+
+	s, err := redis.String(conn.Do("GET", key))
+	if err != nil {
+		log.Printf("ERROR: fail get key %s, error %s", key, err.Error())
+		return "", err
+	}
+
+	return s, nil
+}
+
+func sadd(key string, val string) error {
+	// get conn and put back when exit from method
+	conn := pool.Get()
+	defer conn.Close()
+
+	_, err := conn.Do("SADD", key, val)
+	if err != nil {
+		log.Printf("ERROR: fail add val %s to set %s, error %s", val, key, err.Error())
+		return err
+	}
+
+	return nil
+}
+
+func smembers(key string) ([]string, error) {
+	// get conn and put back when exit from method
+	conn := pool.Get()
+	defer conn.Close()
+
+	s, err := redis.Strings(conn.Do("SMEMBERS", key))
+	if err != nil {
+		log.Printf("ERROR: fail get set %s , error %s", key, err.Error())
+		return nil, err
+	}
+
+	return s, nil
+}
+
+func main() {
+	// initialize redis pool and bootstrap redis
+	initRedis()
+  
+  	// get value which exists
+	log.Printf(get("00000E"))
+  
+  	// get value which does not exists
+	log.Printf(get("0000E"))
+
+  	// add members to set
+	sadd("mystiko", "0000E")
+	sadd("mystiko", "0000D")
+  
+  	// get memebers of set
+	s, _ := smembers("mystiko")
+	log.Printf("%v", s)
 }

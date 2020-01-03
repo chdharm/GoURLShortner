@@ -3,14 +3,15 @@ package main
 import (
 	"os"
 	"fmt"
-	"log"
+	// "log"
 	"github.com/buaazp/fasthttprouter"
 	"github.com/valyala/fasthttp"
 	"database/sql"
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/go-redis/redis"
+	// "github.com/go-redis/redis"
 	routes "../src/controller"
-	response "../src/views"
+	// response "../src/views"
+	sqlconnect "../src/model/sql" 
 )
 
 const (
@@ -23,35 +24,38 @@ var (
 )
 
 func main() {
+	db := sqlconnect.SQLConnect()
+	defer db.Close()
 
-	/*------- Redis Config ----------*/
-	redisClient := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "",
-		DB:       0,
-	})
-	redisPong, redisErr := redisClient.Ping().Result()
-	if redisErr != nil {
-		panic(redisErr)
-	}
-	if redisPong == "PONG" {
-		fmt.Println("Redis client connected")
-	}
-	/*------------------------------------*/
+	// /*------- Redis Config ----------*/
+	// redisClient := redis.NewClient(&redis.Options{
+	// 	Addr:     "localhost:6379",
+	// 	Password: "",
+	// 	DB:       0,
+	// })
+	// redisPong, redisErr := redisClient.Ping().Result()
+	// if redisErr != nil {
+	// 	panic(redisErr)
+	// }
+	// if redisPong == "PONG" {
+	// 	fmt.Println("Redis client connected")
+	// }
+	// /*------------------------------------*/
 
 
-	/*------- MySQL Config ----------*/
-	var sqlerr error
-	if sqldb, sqlerr = sql.Open("mysql", mySQLConnString); sqlerr != nil {
-		log.Fatalf("Error opening database: %s", sqlerr)
-	}
-	if sqlerr = sqldb.Ping(); sqlerr != nil {
-		log.Fatalf("Cannot connect to db: %s", sqlerr)
-	}else{
-		fmt.Println("MySQL DB connected")
-	}
-	/*--------------------------------*/
+	// /*------- MySQL Config ----------*/
+	// var sqlerr error
+	// if sqldb, sqlerr = sql.Open("mysql", mySQLConnString); sqlerr != nil {
+	// 	log.Fatalf("Error opening database: %s", sqlerr)
+	// }
+	// if sqlerr = sqldb.Ping(); sqlerr != nil {
+	// 	log.Fatalf("Cannot connect to db: %s", sqlerr)
+	// }else{
+	// 	fmt.Println("MySQL DB connected")
+	// }
+	// /*--------------------------------*/
 
+	selDB, err := db.Query("SELECT SHORTENEDURL FROM URLShortner")
 
 	/*------- Server Port ----------*/
 	serverPort := os.Getenv("SERVER_PORT")
@@ -63,8 +67,8 @@ func main() {
 	routee := fasthttprouter.New()
 
 	routee.GET("/", routes.Index)
-	routee.GET("/ext/:id" , routes.GetExtendedURL)
 	routee.POST("/sht/", routes.GetShortenedURL)
+	routee.GET("/ext/:id" , routes.GetExtendedURL)
 
 	if e := fasthttp.ListenAndServe(serverPort, routee.Handler); e != nil {
 		fmt.Println(e.Error())
