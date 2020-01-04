@@ -33,18 +33,23 @@ func SQLConnect() *sql.DB{
 	return sqldb
 }
 
-func SQLGet(conn *sql.DB, _hash string) string{
-	// queryString := "SELECT ORIGINALURL FROM URLShortner where hash='"
-	// queryString += _hash + "';"
-	// selDB, err := conn.Query(queryString)
-	// fmt.Println(queryString)
-	queryString := "SELECT ORIGINALURL FROM URLShortner where hash=$1;"
+func SQLGet(conn *sql.DB, _hash string) (string, error){
+	queryString := "SELECT * FROM URLShortner where hash=?;"
 	selDB := conn.QueryRow(queryString, _hash)
-	fmt.Println(selDB.Columns())
-	return ""
+	var (
+		hash string
+		originalurl string
+	)
+	_err := selDB.Scan(&hash, &originalurl)
+	if _err != nil {
+		return "", _err
+	}
+	fmt.Println(hash)
+	fmt.Println(originalurl)
+	return originalurl, nil
 }
 
-func SQLAdd(conn *sql.DB, originalUrl string, _hash) error{
+func SQLAdd(conn *sql.DB, originalUrl string, _hash string) error{
 	queryString := "INSERT INTO URLShortner VALUES"
 	queryString += "('" + _hash + "','" + originalUrl + "');"
 	fmt.Println(queryString)
