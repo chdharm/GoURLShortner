@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	mySQLConnString   = "root:root@tcp(localhost:3307)/URLShortner"
+	mySQLConnString   = "root:root@tcp(localhost:3307)/goLangExperiment"
 	mySQLMaxConnCount = 40
 	mySQLMaxIdleConnCount = 40
 )
@@ -33,32 +33,18 @@ func SQLConnect() *sql.DB{
 	return sqldb
 }
 
-func SQLGet(conn *sql.DB, hash string){
+func SQLGet(conn *sql.DB, hash string) *sql.Rows{
 	queryString := "SELECT SHORTENEDURL FROM URLShortner where hash= "
 	queryString += hash
 	selDB, err := conn.Query(queryString)
-
-
+	fmt.Println(err)
+	return selDB
 }
 
-func SQLAdd(conn *sql.DB, originalUrl string){
-	//Todo: Create hash here
-	hash := createHash(originalUrl)
+func SQLAdd(conn *sql.DB, originalUrl string, hash string){
 	queryString := "INSER INTO SHORTENEDURL(HASH, ORIGINALURL) VALUES"
 	queryString += "(" + hash + "," + originalUrl + ")"
 	selDB, err := conn.Query(queryString)
-	print("selDB:", selDB)
-}
-
-func createHash(url string) string{
-	hash := ""
-	//take time stamp and create hash
-	return hash
-}
-func mustPrepare(db *sql.DB, query string) *sql.Stmt {
-	stmt, err := db.Prepare(query)
-	if err != nil {
-		log.Fatalf("Error when preparing statement %q: %s", query, err)
-	}
-	return stmt
+	fmt.Println(selDB)
+	fmt.Println(err)
 }
