@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 	"fmt"
-	"log"
+	// "log"
 	"github.com/buaazp/fasthttprouter"
 	"github.com/valyala/fasthttp"
 	// routes "../src/controller"
@@ -11,7 +11,7 @@ import (
 	sqlconnect "../src/model/sql"
 	redisconnect "../src/model/redis"
 	cachehandler "../src/cachehandler"
-	// "reflect"
+	"reflect"
 	"crypto/sha1"
 	"encoding/hex"
 	"math/rand"
@@ -25,22 +25,8 @@ const (
 )
 
 func main() {
-	// initialize redis pool and bootstrap redis
 	redisconnect.InitRedis()
-  
-  	// get value which exists
-	log.Printf(redisconnect.Get("00000E"))
-  
-  	// get value which does not exists
-	log.Printf(redisconnect.Get("0000E"))
-
-  	// add members to set
-	redisconnect.Sadd("mystiko", "0000E")
-	redisconnect.Sadd("mystiko", "0000D")
-  
-  	// get memebers of set
-	s, _ := redisconnect.Smembers("mystiko")
-	log.Println("%v", s)
+	sqlconnect.SQLConnect()
 
 	// /*------- Server Port ----------*/
 	serverPort := os.Getenv("SERVER_PORT")
@@ -70,9 +56,11 @@ func Index(ctx *fasthttp.RequestCtx){
 }
 
 func GetExtendedURL(ctx *fasthttp.RequestCtx){
-	_hash := "dhegehgefeffe"
-	_response = cachehandler.GetConfiguration(_hash)
+	_hash := "Rama"
+	_response := cachehandler.GetConfiguration(_hash)
 	print(_response)
+
+	ctx.SetBody([]byte("It's working fine !"))
 }
 
 func GetShortenedURL(ctx *fasthttp.RequestCtx){
@@ -83,31 +71,46 @@ func GetShortenedURL(ctx *fasthttp.RequestCtx){
 	// fmt.Println(reflect.TypeOf(req))
 
 	originalURL := "http://www.workindia.in"
+	shouldOverride := true
+	identifier := ""
 
 	var (
 		short_url string
 	)
 	ctx.SetStatusCode(fasthttp.StatusNotFound)
-	for loopI := 0; loopI < 5; loopI++ {
-		_hash := createHashString(originalURL)
-		_obj = cachehandler.GetConfiguration(_hash)
-		if _obj == nil{
+	fmt.Println(short_url)
+	if identifier == "" {
+		for loopI := 0; loopI < 5; loopI++ {
+			_hash := createHashString(originalURL)
+			_obj := cachehandler.GetConfiguration(_hash)
+			if _obj ==""{
+				sqldb := sqlconnect.SQLConnect()
+				defer sqldb.Close()
+				sqlconnect.SQLAdd(sqldb, _hash, originalURL)
+				cachehandler.SetConfiguration(_hash, originalURL)
+				short_url = _hash
+				ctx.SetStatusCode(fasthttp.StatusOK)
+				ctx.SetBody([]byte(short_url))
+				break
+			}
+		}
+	}else{
+		_obj := cachehandler.GetConfiguration(identifier)
+		if _obj =="" || shouldOverride == true{
 			sqldb := sqlconnect.SQLConnect()
 			defer sqldb.Close()
-			sqlconnect.SQLAdd(sqldb, _hash, originalURL)
-			cachehandler.SetConfiguration(_hash, originalURL)
-			short_url = _hash
-			break
+			sqlconnect.SQLAdd(sqldb, identifier, originalURL)
+			cachehandler.SetConfiguration(identifier, originalURL)
+			short_url = identifier
+			ctx.SetStatusCode(fasthttp.StatusOK)
+			ctx.SetBody([]byte(short_url))
 		}
 	}
+	fmt.Println(reflect.TypeOf(short_url))
+	fmt.Println(short_url)
 	ctx.SetContentType("application/json")
-	if short_url != nil{
-		ctx.SetStatusCode(fasthttp.StatusOK)
-		ctx.SetBody([]byte(short_url))
-	}
-	else{
-		ctx.SetStatusCode(fasthttp.StatusNotFound)
-	}
+
+	ctx.SetBody([]byte("It's working fine !"))
 }
 
 func createHashString(originalURL string) string{

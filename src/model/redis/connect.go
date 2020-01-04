@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 	"github.com/gomodule/redigo/redis"
-	"fmt"
+	// "fmt"
 )
 
 var pool *redis.Pool
@@ -74,14 +74,10 @@ func Get(key string) (string, error) {
 	conn := pool.Get()
 	defer conn.Close()
 	s, err := redis.String(conn.Do("GET", key))
-	log.Printf("======", s)
-	// log.Printf(err)
-	// s, err := redis.String(conn.Do("GET", key))
 	if err != nil {
 		log.Printf("ERROR: fail get key %s, error %s", key, err.Error())
 		return "", err
 	}
-
 	return s, nil
 }
 

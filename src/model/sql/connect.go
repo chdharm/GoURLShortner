@@ -1,4 +1,4 @@
-package main
+package sqlconnect
 
 import (
 	// "os"
@@ -61,10 +61,10 @@ func SQLAdd(conn *sql.DB, originalUrl string, _hash string) error{
 	return nil
 }
 
-func main(){
-	fmt.Println("hiiiis")
-	SQLConnect()
-	//SQLAdd(sqldb,"http://dharmpal.com/IN", "fhjmnfvdghnbBFVNSVB V SNBVSBNSV NVNBvdshds")
-	SQLGet(sqldb, "fhjmnfvdghnbvdshds")
+// func main(){
+// 	fmt.Println("hiiiis")
+// 	SQLConnect()
+// 	//SQLAdd(sqldb,"http://dharmpal.com/IN", "fhjmnfvdghnbBFVNSVB V SNBVSBNSV NVNBvdshds")
+// 	SQLGet(sqldb, "fhjmnfvdghnbvdshds")
 
-}
+// }
