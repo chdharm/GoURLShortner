@@ -4,8 +4,8 @@ import (
 	"log"
 	"os"
 	"strings"
-
 	"github.com/gomodule/redigo/redis"
+	"fmt"
 )
 
 var pool *redis.Pool
@@ -46,11 +46,15 @@ func InitStore() {
 	}
 }
 
-func Ping(conn redis.Conn) {
+func Ping() {
+	conn := pool.Get()
+	defer conn.Close()
 	_, err := redis.String(conn.Do("PING"))
 	if err != nil {
 		log.Printf("ERROR: fail ping redis conn: %s", err.Error())
 		os.Exit(1)
+	}else{
+		log.Printf("SUCCESS: Ping done !")
 	}
 }
 
@@ -69,8 +73,10 @@ func Set(key string, val string) error {
 func Get(key string) (string, error) {
 	conn := pool.Get()
 	defer conn.Close()
-	conn.Do("GET", key)
 	s, err := redis.String(conn.Do("GET", key))
+	log.Printf("======", s)
+	// log.Printf(err)
+	// s, err := redis.String(conn.Do("GET", key))
 	if err != nil {
 		log.Printf("ERROR: fail get key %s, error %s", key, err.Error())
 		return "", err
@@ -104,3 +110,24 @@ func Smembers(key string) ([]string, error) {
 
 	return s, nil
 }
+
+func Del(key string) (string, error) {
+	conn := pool.Get()
+	defer conn.Close()
+	s, err := redis.String(conn.Do("DEL", key))
+	if err != nil {
+		log.Printf("ERROR: fail to delete key %s, error %s", key, err.Error())
+		return "", err
+	}
+
+	return s, nil
+}
+// func main(){
+// 	fmt.Println("hi")
+// 	InitRedis()
+// 	Ping()
+// 	Set("jwevfewbnfwejhnfbvw34256236534265342342364536454623", "sandhya")
+// 	Get("jwevfewbnfwejhnfbvw34256236534265342342364536454623")
+// 	Del("jwevfewbnfwejhnfbvw34256236534265342342364536454623")
+
+// }
