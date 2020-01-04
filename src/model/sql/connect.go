@@ -1,4 +1,4 @@
-package sqlconnect
+package main
 
 import (
 	// "os"
@@ -33,18 +33,33 @@ func SQLConnect() *sql.DB{
 	return sqldb
 }
 
-func SQLGet(conn *sql.DB, hash string) *sql.Rows{
-	queryString := "SELECT SHORTENEDURL FROM URLShortner where hash= "
-	queryString += hash
-	selDB, err := conn.Query(queryString)
-	fmt.Println(err)
-	return selDB
+func SQLGet(conn *sql.DB, _hash string) string{
+	// queryString := "SELECT ORIGINALURL FROM URLShortner where hash='"
+	// queryString += _hash + "';"
+	// selDB, err := conn.Query(queryString)
+	// fmt.Println(queryString)
+	queryString := "SELECT ORIGINALURL FROM URLShortner where hash=$1;"
+	selDB := conn.QueryRow(queryString, _hash)
+	fmt.Println(selDB.Columns())
+	return ""
 }
 
-func SQLAdd(conn *sql.DB, originalUrl string, hash string){
-	queryString := "INSER INTO SHORTENEDURL(HASH, ORIGINALURL) VALUES"
-	queryString += "(" + hash + "," + originalUrl + ")"
+func SQLAdd(conn *sql.DB, originalUrl string, _hash) error{
+	queryString := "INSERT INTO URLShortner VALUES"
+	queryString += "('" + _hash + "','" + originalUrl + "');"
+	fmt.Println(queryString)
 	selDB, err := conn.Query(queryString)
 	fmt.Println(selDB)
-	fmt.Println(err)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func main(){
+	fmt.Println("hiiiis")
+	SQLConnect()
+	//SQLAdd(sqldb,"http://dharmpal.com/IN", "fhjmnfvdghnbBFVNSVB V SNBVSBNSV NVNBvdshds")
+	SQLGet(sqldb, "fhjmnfvdghnbvdshds")
+
 }

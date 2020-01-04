@@ -10,6 +10,7 @@ import (
 	// response "../src/views"
 	sqlconnect "../src/model/sql"
 	redisconnect "../src/model/redis"
+	cachehandler "../src/cachehandler"
 	// "reflect"
 	"crypto/sha1"
 	"encoding/hex"
@@ -70,20 +71,8 @@ func Index(ctx *fasthttp.RequestCtx){
 
 func GetExtendedURL(ctx *fasthttp.RequestCtx){
 	_hash := "dhegehgefeffe"
-	var (
-		_obj string
-		_err error
-	)
-	_obj, _err = redisconnect.Get(_hash)
-	if _err != nil || _obj == nil {
-		sqldb := sqlconnect.SQLConnect()
-		defer sqldb.Close()
-		_response = sqlconnect.SQLGet(sqldb, _hash)
-		return _response
-	}else if _obj != nil {
-		return _obj
-	}
-	return nil
+	_response = cachehandler.GetConfiguration(_hash)
+	print(_response)
 }
 
 func GetShortenedURL(ctx *fasthttp.RequestCtx){
@@ -101,14 +90,12 @@ func GetShortenedURL(ctx *fasthttp.RequestCtx){
 	ctx.SetStatusCode(fasthttp.StatusNotFound)
 	for loopI := 0; loopI < 5; loopI++ {
 		_hash := createHashString(originalURL)
-		_obj, _err = redisconnect.Get("15781286190245f")
-		if _err != nil{
-			fmt.Println(_err)
-		}else if _obj == nil{
-			redisconnect.Sadd(_hash, originalURL)
+		_obj = cachehandler.GetConfiguration(_hash)
+		if _obj == nil{
 			sqldb := sqlconnect.SQLConnect()
 			defer sqldb.Close()
 			sqlconnect.SQLAdd(sqldb, _hash, originalURL)
+			cachehandler.SetConfiguration(_hash, originalURL)
 			short_url = _hash
 			break
 		}
