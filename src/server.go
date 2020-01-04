@@ -6,9 +6,6 @@ import (
 	"log"
 	"github.com/buaazp/fasthttprouter"
 	"github.com/valyala/fasthttp"
-	"database/sql"
-	_ "github.com/go-sql-driver/mysql"
-	// "github.com/go-redis/redis"
 	// routes "../src/controller"
 	// response "../src/views"
 	sqlconnect "../src/model/sql"
@@ -44,36 +41,6 @@ func main() {
 	s, _ := redisconnect.Smembers("mystiko")
 	log.Println("%v", s)
 
-	// /*------- Redis Config ----------*/
-	// redisClient := redis.NewClient(&redis.Options{
-	// 	Addr:     "localhost:6379",
-	// 	Password: "",
-	// 	DB:       0,
-	// })
-	// redisPong, redisErr := redisClient.Ping().Result()
-	// if redisErr != nil {
-	// 	panic(redisErr)
-	// }
-	// if redisPong == "PONG" {
-	// 	fmt.Println("Redis client connected")
-	// }
-	// /*------------------------------------*/
-
-
-	// /*------- MySQL Config ----------*/
-	// var sqlerr error
-	// if sqldb, sqlerr = sql.Open("mysql", mySQLConnString); sqlerr != nil {
-	// 	log.Fatalf("Error opening database: %s", sqlerr)
-	// }
-	// if sqlerr = sqldb.Ping(); sqlerr != nil {
-	// 	log.Fatalf("Cannot connect to db: %s", sqlerr)
-	// }else{
-	// 	fmt.Println("MySQL DB connected")
-	// }
-	// /*--------------------------------*/
-
-	// selDB, err := db.Query("SELECT SHORTENEDURL FROM URLShortner")
-
 	// /*------- Server Port ----------*/
 	serverPort := os.Getenv("SERVER_PORT")
 	if serverPort == "" {
@@ -100,10 +67,15 @@ func Index(ctx *fasthttp.RequestCtx){
 	ctx.SetStatusCode(fasthttp.StatusOK)
 	ctx.SetBody([]byte("It's working fine !"))
 }
-func GetExtendedURL(ctx *fasthttp.RequestCtx) {
-	_hash = "dhegehgefeffe"
+
+func GetExtendedURL(ctx *fasthttp.RequestCtx){
+	_hash := "dhegehgefeffe"
+	var (
+		_obj string
+		_err error
+	)
 	_obj, _err = redisconnect.Get(_hash)
-	if _err != nil{
+	if _err != nil || _obj == nil {
 		sqldb := sqlconnect.SQLConnect()
 		defer sqldb.Close()
 		_response = sqlconnect.SQLGet(sqldb, _hash)
@@ -113,6 +85,7 @@ func GetExtendedURL(ctx *fasthttp.RequestCtx) {
 	}
 	return nil
 }
+
 func GetShortenedURL(ctx *fasthttp.RequestCtx){
 	fmt.Println("-----333333-------")
 	// fmt.Println(ctx)
@@ -122,20 +95,34 @@ func GetShortenedURL(ctx *fasthttp.RequestCtx){
 
 	originalURL := "http://www.workindia.in"
 
+	var (
+		short_url string
+	)
+	ctx.SetStatusCode(fasthttp.StatusNotFound)
 	for loopI := 0; loopI < 5; loopI++ {
+		_hash := createHashString(originalURL)
 		_obj, _err = redisconnect.Get("15781286190245f")
 		if _err != nil{
 			fmt.Println(_err)
-		}else if _obj == NewClient{
-			_hash := createHashString(originalURL)
+		}else if _obj == nil{
 			redisconnect.Sadd(_hash, originalURL)
 			sqldb := sqlconnect.SQLConnect()
 			defer sqldb.Close()
 			sqlconnect.SQLAdd(sqldb, _hash, originalURL)
+			short_url = _hash
 			break
 		}
 	}
+	ctx.SetContentType("application/json")
+	if short_url != nil{
+		ctx.SetStatusCode(fasthttp.StatusOK)
+		ctx.SetBody([]byte(short_url))
+	}
+	else{
+		ctx.SetStatusCode(fasthttp.StatusNotFound)
+	}
 }
+
 func createHashString(originalURL string) string{
 	hashHelper := sha1.New()
 	hashHelper.Write([]byte(originalURL))
@@ -143,6 +130,7 @@ func createHashString(originalURL string) string{
 	sha1_hash = takerandonSubstring(sha1_hash)
 	return sha1_hash
 }
+
 func takerandonSubstring(str string) string{
 	_start := rand.Intn(4)
 	_end := _start + 5

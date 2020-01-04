@@ -15,7 +15,7 @@ func InitRedis() {
 	InitPool()
 
 	// bootstramp some data to redis
-	InitStore()
+	//InitStore()
 }
 
 func InitPool() {
@@ -38,8 +38,8 @@ func InitStore() {
 	conn := pool.Get()
 	defer conn.Close()
 
-	macs := []string{"00000C  Cisco", "00000D  FIBRONICS", "00000E  Fujitsu",
-		"00000F  Next", "000010  Hughes"}
+	macs := []string{"Testkey1  Cisco", "Testkey2  FIBRONICS", "Testkey3  Fujitsu",
+		"Testkey4  Next", "Testkey5  Hughes"}
 	for _, mac := range macs {
 		pair := strings.Split(mac, "  ")
 		Set(pair[0], pair[1])
